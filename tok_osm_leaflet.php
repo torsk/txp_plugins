@@ -19,13 +19,9 @@ if (0) {
 
 h1. tok_osm_leaflet
 
-… displays a map based on OpenStreetMap data using the leaflet javascript library.
-Width and height of map div are configurable and of course the portion to be shown.
-A marker may be set on the landscape for adding a textual comment.
+… displays a map based on OpenStreetMap data using the leaflet javascript library. Width and height of map div are configurable and of course the portion to be shown. A marker may be set on the landscape for adding a textual comment.
 
-Required resources will be loaded from external sources,
-this applies obviously to the map tiles, but also to javascript,
-css and image files e.g. for the markers.
+Required resources will be loaded from external sources, this applies obviously to the map tiles, but also to javascript, css and image files e.g. for the markers.
 
 
 h2. Attributes of this plugin
@@ -36,11 +32,9 @@ h3. Map dimension
 * width
 * height
 
-Are any valid CSS dimensions to set width and height of the map div.
-If you omit the unit, "px" is assumed.
+Are any valid CSS dimensions to set width and height of the map div. If you omit the unit, "px" is assumed.
 
-If you don't provide width and height, more or less senseful default values
-will be applied.
+If you don't provide width and height, more or less senseful default values will be applied.
 
 h4. Set up the map
 
@@ -50,8 +44,7 @@ The visible portion of the map is determined by three attributes:
 * clat
 * zoom
 
-Where _clon_ is the longitude and _clat_ is the latitude of the maps centeras
-GPS values. Both _clon_ and _clat_ are mandatory.
+Where _clon_ is the longitude and _clat_ is the latitude of the maps centeras GPS values. Both _clon_ and _clat_ are mandatory.
 
 The scale of the map is set by the _zoom_ attribute.
 
@@ -63,13 +56,9 @@ The attributes for setting a marker are:
 * mlat
 * mcomment
 
-_mlon_ and _mlat_ are the GPS coordinates of the markers position,
-exactly as _clon_ and _clat_. A marker will be placed on the map at that position.
-If _mlon_ and _mlat_ are provided, _clon_ and _clat_ may be omitted;
-the map will be centered slightly avobe the marker in that case.
+_mlon_ and _mlat_ are the GPS coordinates of the markers position, exactly as _clon_ and _clat_. A marker will be placed on the map at that position. If _mlon_ and _mlat_ are provided, _clon_ and _clat_ may be omitted; the map will be centered slightly avobe the marker in that case.
 
-If _mcomment_ has a value, the marker will be clickable
-to show the given content.
+If _mcomment_ has a value, the marker will be clickable to show the given content.
 
 
 h2. Examples
