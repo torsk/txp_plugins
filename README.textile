@@ -1,0 +1,12 @@
+h1. Plugins for Textpattern CMS
+
+h2. tok_osm_leaflet
+
+_tok_osm_leaflet_ displays a map based on OpenStreetMap data using the
+leaflet javascript library. Width and height of map div are
+configurable and of course the portion to be shown. A marker may be
+set on the landscape for adding a textual comment.
+
+* "source":tok_osm_leaflet.php
+* "installable snippet":https://github.com/torsk/txp_plugins/raw/master/tok_osm_leaflet.txt
+
