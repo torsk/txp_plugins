@@ -23,7 +23,13 @@ h1. tok_osm_leaflet
 Width and height of map div are configurable and of course the portion to be shown.
 A marker may be set on the landscape for adding a textual comment.
 
+Required resources will be loaded from external sources,
+this applies obviously to the map tiles, but also to javascript,
+css and image files e.g. for the markers.
+
+
 h2. Attributes of this plugin
+
 
 h3. Map dimension
 
@@ -65,7 +71,9 @@ the map will be centered slightly avobe the marker in that case.
 If _mcomment_ has a value, the marker will be clickable
 to show the given content.
 
+
 h2. Examples
+
 
 h3. The simplest way of showing a map
 
@@ -80,8 +88,6 @@ The city area of Berlin.
 
 bc. <txp:tok_osm_leaflet width="500" height="400"
      clon="52.5012" clat="13.4314" zoom="11" />
-
-
 
 
 h3. A simple marker
