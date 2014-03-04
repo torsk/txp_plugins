@@ -1,6 +1,6 @@
 <?php
 
-$plugin['version'] = '0.1';
+$plugin['version'] = '0.2';
 $plugin['author'] = 'Torsten Krüger';
 $plugin['author_uri'] = 'http://kryger.de/';
 $plugin['description'] = 'Shows the next date of a weekly recurring event.';
@@ -48,7 +48,7 @@ bc. <txp:tok_next_weekly dow="3" />
 
 h3. A bit broader about todays occurence
 
-You'll see this only, if you set the appropriate day of week. Or just wait …
+You will see this only, if you set the appropriate day of week. Or just wait …
 
 bc. <txp:tok_next_weekly dow="1" todays_label=" *Which is today. So hurry up!*" />
 
@@ -91,9 +91,11 @@ function tok_next_weekly( $atts ) {
   if ( empty ( $dow )) {
     return( sprintf( $err_format, 'No day of week given' )); }
 
-  // some preparation
-  $dows = array( '', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday' );
-  if ($alt_locale) { setlocale( LC_ALL, $alt_locale ); }
+  $ret_val = sprintf( $err_format, 'date unknown' );
+
+  if ($alt_locale) {
+    $regular_locale = setlocale( LC_TIME, 0 );
+    setlocale( LC_TIME, $alt_locale ); }
 
   // get today
   $today = date( "N:W:Gi" ) . "\n";
@@ -101,33 +103,42 @@ function tok_next_weekly( $atts ) {
   $week_today = ( $week_today_no & 1 ? "odd" : "even" );
 
   // calculate the day we are looking for
-  $looking_for = '';
+  $date_offset = 0;
 
   // let's see, if we're looking for today ...
   if (( $week_today == $week || $week == 'every' ) &&
       $dow_today == $dow &&
       0 + $time_now < 0 + $skip_at ) {
-    return( strftime( $format, strtotime( 'today' )) . "$todays_label" ); }
+    $ret_val = ( strftime( $format, strtotime( 'today' )) . "$todays_label" ); }
 
-  // ... or a forthcoming day in the current week ...
-  elseif (( $week_today == $week || $week == 'every' ) &&
-	  $dow_today < $dow ) {
-    $looking_for = '+' . $dow - $dow_today . ' day'; }
+  else { // so, it's not today, ...
 
-  // ... if not, ...
-  else {
-    // ... it's in a future week: next one  ...
-    if ( $week == 'every' || $week_today != $week ) {
-      $looking_for = 'next ' . $dows[ $dow ]; }
-    // ... or after next week
+    // ... but maybe a forthcoming day in the current week ...
+    if (( $week_today == $week || $week == 'every' ) &&
+	$dow_today < $dow ) {
+      $date_offset = $dow - $dow_today; }
+
+    // ... if not, it's in a future week:
     else {
-      $looking_for = 'second '.$dows[ $dow ]; }
+      // either next one  ...
+      if ( $week_today != $week || $week == 'every' ) {
+	$date_offset = 7 + $dow - $dow_today; }
+      // ... or after next week
+      else {
+	$date_offset = 14 + $dow - $dow_today; }
+    }
+
+    // put value into variable
+    $ret_val = ( strftime( $format, strtotime( '+' . $date_offset . ' day' )) );
   }
 
-  if ( $looking_for ) {
-    return( strftime( $format, strtotime( $looking_for )) ); }
+  // reset locale
+  if ($alt_locale) {
+    setlocale( LC_TIME, $regular_locale );
+  }
 
-  return( sprintf( $err_format, 'date unknown' ));
+  // finish
+  return( $ret_val );
 }
 
 # --- END PLUGIN CODE ---
