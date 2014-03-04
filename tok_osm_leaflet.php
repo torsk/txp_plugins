@@ -1,6 +1,6 @@
 <?php
 
-$plugin['version'] = '0.1';
+$plugin['version'] = '0.2';
 $plugin['author'] = 'Torsten Krüger';
 $plugin['author_uri'] = 'http://kryger.de/';
 $plugin['description'] = 'Displays a small OpenStreetMap (with a marker in it if requested) using the leaflet library';
@@ -68,7 +68,7 @@ h3. The simplest way of showing a map
 
 The Brandenburg Gate in Berlin
 
-bc. <txp:tok_osm_leaflet clon="52.5163" clat="13.3778" />
+bc. <txp:tok_osm_leaflet clat="52.5163" clon="13.3778" />
 
 
 h3. Showing the exact portion
@@ -76,7 +76,7 @@ h3. Showing the exact portion
 The city area of Berlin.
 
 bc. <txp:tok_osm_leaflet width="500" height="400"
-     clon="52.5012" clat="13.4314" zoom="11" />
+     clat="52.5012" clon="13.4314" zoom="11" />
 
 
 h3. A simple marker
@@ -84,21 +84,21 @@ h3. A simple marker
 … on the Eiffel Tower in Paris
 
 bc. <txp:tok_osm_leaflet width="600" height="450" zoom="12"
-     clon = "48.8586" clat = "2.3439" mlon="48.8578" mlat="2.2933" />
+     clat="48.8586" clon="2.3439" mlat="48.8583" mlon="2.2944" />
 
 
 h3. An automatically centered marker
 
 The Eiffel Tower again; just omit _clon_ and _clat_
 
-bc. <txp:tok_osm_leaflet width="600" height="450" zoom="12" mlon="48.8578" mlat="2.2933" />
+bc. <txp:tok_osm_leaflet width="600" height="450" zoom="12" mlat="48.8583" mlon="2.2944" />
 
 
 h3. A marker with comment
 
 A Jazz Standard
 
-bc. <txp:tok_osm_leaflet mlon="40.76291" mlat="-73.98285" mcomment="Birdland" />
+bc. <txp:tok_osm_leaflet mlat="40.76291" mlon="-73.98285" mcomment="Birdland" />
 
 
 # --- END PLUGIN HELP ---
@@ -114,30 +114,30 @@ function tok_osm_leaflet($atts) {
 			'width'    => '600px',
 			'height'   => '400px',
 			'zoom'     => '16',
-			'clon'     => '',
 			'clat'     => '',
-			'mlon'     => '',
+			'clon'     => '',
 			'mlat'     => '',
+			'mlon'     => '',
 			'mcomment' => ''
 			), $atts ));
 
   $err_format = '<span style="color:#d12;" title="%s">█</span>';
 
   // check neccessary atttributes
-  if ( empty ( $clon )) {
-    if ( !empty( $mlon )) {
-      $clon = number_format( $mlon + 0.0005, 5, '.', '');
-    }
-    else {
-      return( sprintf( $err_format, 'Center longitude is missing!' ));
-    }
-  }
   if ( empty ( $clat )) {
     if ( !empty( $mlat )) {
-      $clat = $mlat;
+      $clat = number_format( $mlat + 0.0005, 5, '.', '');
     }
     else {
       return( sprintf( $err_format, 'Center latitude is missing!' ));
+    }
+  }
+  if ( empty ( $clon )) {
+    if ( !empty( $mlon )) {
+      $clon = $mlon;
+    }
+    else {
+      return( sprintf( $err_format, 'Center longitude is missing!' ));
     }
   }
 
@@ -153,13 +153,13 @@ function tok_osm_leaflet($atts) {
     '<script type="text/javascript">' . "\n" .
     'window.addEventListener("load", build_map, false);' . "\n" .
     'function build_map() {'. "\n" .
-    'var map = L.map("map").setView([' . $clon . ',' . $clat . '],' . $zoom . ');' . "\n" .
+    'var map = L.map("map").setView([' . $clat . ',' . $clon . '],' . $zoom . ');' . "\n" .
     'L.tileLayer("http://{s}.tile.osm.org/{z}/{x}/{y}.png", {' . "\n" .
     'attribution: \'&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors\'}).addTo(map);';
 
   // add marker if one was requestes
   if (( !empty( $mlon )) && ( !empty( $mlat ) )) {
-    $map_part .= 'L.marker([' . $mlon . ',' . $mlat . ']).addTo(map)';
+    $map_part .= 'L.marker([' . $mlat . ',' . $mlon . ']).addTo(map)';
     if ( !empty( $mcomment )) {
       $map_part .= '.bindPopup("'.$mcomment.'")';}
   }
