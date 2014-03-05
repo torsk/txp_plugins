@@ -17,7 +17,7 @@ if (0) {
 ?>
 # --- BEGIN PLUGIN HELP ---
 
-h1. <tok_next_weekly />
+h1. tok_next_weekly
 
 … calculates the upcoming occurence of a weekly recurring date. The output is widely configurable through strftime compatibility. 
 
@@ -30,7 +30,8 @@ h2. Attributes of the tag
   @odd@ for events that repeat every odd week
   @even@ for events that repeat every even week
 - skip_at := Set the time at which a todays date changes from today to the next occurence.
-               Please provide the time in 24-hour format, immediately (without any separating character) followed by the two digits of the minute. So @09:34 PM@ becomes @2134@. Default is "1200" for events in the morning
+		      Please provide the time in 24-hour format, immediately (without any separating character) followed by the two digits of the minute. So @09:34 PM@ becomes @2134@. Defaults to "1200" for events in the morning.
+The plugin uses the servers time zone here instead of that one, which was configured for the site. It may be necessary to fiddle around with this setting to find an appropriate value. Timezone handling may be changed in a later release of tok_next_weekly.=:
 - format := the date output in strftime format. Default is @%x@ – the "preferred date representation based on locale".
 - todays_label := Append a special label to the output if the date is today. Defaults to an exclamation mark in parentheses
 - alt_locale := As names in calendars are language dependent, a locale setting may be forced with this attributed (default: not set). Please note that this function depends massively on which locales are available on the server system
