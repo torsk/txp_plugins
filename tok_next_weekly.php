@@ -1,6 +1,6 @@
 <?php
 
-$plugin['version'] = '0.2';
+$plugin['version'] = '0.3';
 $plugin['author'] = 'Torsten Krüger';
 $plugin['author_uri'] = 'http://kryger.de/';
 $plugin['description'] = 'Shows the next date of a weekly recurring event.';
@@ -30,8 +30,7 @@ h2. Attributes of the tag
   @odd@ for events that repeat every odd week
   @even@ for events that repeat every even week
 - skip_at := Set the time at which a todays date changes from today to the next occurence.
-		      Please provide the time in 24-hour format, immediately (without any separating character) followed by the two digits of the minute. So @09:34 PM@ becomes @2134@. Defaults to "1200" for events in the morning.
-The plugin uses the servers time zone here instead of that one, which was configured for the site. It may be necessary to fiddle around with this setting to find an appropriate value. Timezone handling may be changed in a later release of tok_next_weekly.=:
+Please provide the time in 24-hour format, immediately (without any separating character) followed by the two digits of the minute. So @09:34 PM@ becomes @2134@. Defaults to "1200" for events in the morning.=:
 - format := the date output in strftime format. Default is @%x@ – the "preferred date representation based on locale".
 - todays_label := Append a special label to the output if the date is today. Defaults to an exclamation mark in parentheses
 - alt_locale := As names in calendars are language dependent, a locale setting may be forced with this attributed (default: not set). Please note that this function depends massively on which locales are available on the server system
@@ -98,8 +97,9 @@ function tok_next_weekly( $atts ) {
     $regular_locale = setlocale( LC_TIME, 0 );
     setlocale( LC_TIME, $alt_locale ); }
 
-  // get today
-  $today = date( "N:W:Gi" ) . "\n";
+  // get day and time of now
+  $today = safe_strftime( "%u:%V:%H%M" );
+  echo $today;
   list( $dow_today, $week_today_no, $time_now ) = explode(':', $today);
   $week_today = ( $week_today_no & 1 ? "odd" : "even" );
 
