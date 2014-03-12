@@ -99,7 +99,6 @@ function tok_next_weekly( $atts ) {
 
   // get day and time of now
   $today = safe_strftime( "%u:%V:%H%M" );
-  echo $today;
   list( $dow_today, $week_today_no, $time_now ) = explode(':', $today);
   $week_today = ( $week_today_no & 1 ? "odd" : "even" );
 
