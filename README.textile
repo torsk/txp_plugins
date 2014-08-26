@@ -13,3 +13,12 @@ _tok_next_weekly_ calculates the upcoming occurence of a weekly recurring date. 
 
 * "source":tok_next_weekly.php
 * "installable snippet":https://github.com/torsk/txp_plugins/raw/master/tok_next_weekly.txt
+
+h2. tok_owm_current
+
+_tok_owm_current_ makes the current weather data from "http://www.openweathermap.org":http://www.openweathermap.org available as textpattern plugin. The output is widely configurable; documentation and examples are included on the plugins help page.
+However, you need an "OpenWeatherMap API Key":http://openweathermap.org/appid to use this plugin.
+
+* "source":tok_owm_current.php
+* "installable snippet":https://github.com/torsk/txp_plugins/raw/master/tok_owm_current.txt
+
