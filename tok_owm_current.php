@@ -271,7 +271,7 @@ function tok_owm_current($atts, $thing = null ) {
 
 
   if ($thing !== null) {
-    $display = parse($thing);
+    $display = $thing;
   }
 
   // {{{ return cached data, if there is some
@@ -309,36 +309,40 @@ function tok_owm_current($atts, $thing = null ) {
   // }}}
 
   // {{{ assemble plugins output, save to database and return to txp
-  $output = "";
+  $out = "";
 
   // single city
   if ( $request_find === "weather" ) {
     $weather = tok_owm_current_import_data( $owm_response, $na );
-    $output = strtr( $display, $weather );
+    $out = strtr( $display, $weather );
   }
   // group of cities
   else {
     foreach ( $owm_response[ "list" ] as $current_city ) {
       $weather = tok_owm_current_import_data( $current_city, $na );
-      $output .= strtr( $display, $weather );
+      $out .= strtr( $display, $weather );
     }
+  }
+
+  if ($thing !== null) {
+    $out = parse( $out );
   }
 
   // save output to database
   if( $cached_data ){
     safe_update( "tok_owm_current_requests_cache",
 		 "timestamp='".$now."',".
-		 "data='".mysql_real_escape_string( $output )."'",
+		 "data='".mysql_real_escape_string( $out )."'",
 		 "request='$index';");
   }
   else {
     safe_insert( "tok_owm_current_requests_cache",
 		 "timestamp='".$now."',".
-		 "data='".mysql_real_escape_string( $output )."',".
+		 "data='".mysql_real_escape_string( $out )."',".
 		 "request='".$index."';");
   }
 
-  return ( $output );
+  return ( $out );
   // }}}
 }
 
