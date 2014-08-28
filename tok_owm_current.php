@@ -1,20 +1,27 @@
+// -*- mode: PHP; mode: folding; folded-file: t; -*-
 <?php
 
-$plugin['version'] = '0.1';
+// {{{ plugin setup
+
+$plugin['version'] = '0.2';
 $plugin['author'] = 'Torsten Krüger';
 $plugin['author_uri'] = 'http://kryger.de/';
-$plugin['description'] = 'Shows data from OpenWeatherMap widely configurabel';
+$plugin['description'] = 'Shows data from OpenWeatherMap widely configurable';
 
-// Plugin types:
-// 0 = regular plugin; loaded on the public web side only
-// 1 = admin plugin; loaded on both the public and admin side
-// 2 = library; loaded only when include_plugin() or require_plugin() is called
 $plugin['type'] = 0;
+
+if (!defined('PLUGIN_LIFECYCLE_NOTIFY')) define('PLUGIN_LIFECYCLE_NOTIFY', 0x0002);
+$plugin['flags'] = PLUGIN_LIFECYCLE_NOTIFY;
+
 
 @include_once('zem_tpl.php');
 
 if (0) {
 ?>
+// }}}
+
+// {{{ plugin help
+
 # --- BEGIN PLUGIN HELP ---
 
 h1. tok_owm_current
@@ -41,6 +48,14 @@ This attribute is your interface to the "OpenWeaterMap multilingual support":htt
 * na
 
 What to show, if a requested value is not available. This may depend on language or personal preferences; so you may set it here. Default is a question mark "?".
+
+* cache_secs
+
+Time in seconds to cache a requests result. The same request within the given time will be answered from the cached data without sending another request to OpenWeatherMap. Please note, that the output is cached -- so if you are fiddeling around with the display attribute, reduce this value for the time of testing. Default is 600 (10 minutes).
+
+* cache_mark
+
+Text to be attached to the output, if cached data was used.
 
 * units
 
@@ -183,15 +198,58 @@ If you have suggestions for additional features of this plugin, please "let me k
 <?php
 }
 
+// }}}
+
+// {{{ plugin code
 # --- BEGIN PLUGIN CODE ---
 
+  // {{{ lifecycle callbacks and functions
+
+    // {{{ Lifecycle callback
+if (@txpinterface == 'admin') {
+  register_callback('tok_owm_current_installation_routine',
+		    'plugin_lifecycle.tok_owm_current', 'installed');
+  register_callback('tok_owm_current_deletion_routine',
+		    'plugin_lifecycle.tok_owm_current', 'deleted');
+}
+// }}}
+
+    // {{{ installation routine
+function tok_owm_current_installation_routine() {
+
+  $create_table ="CREATE TABLE IF NOT EXISTS `".PFX."tok_owm_current_requests_cache` ("; 
+  $create_table .= <<<EOD
+    `id` int(15) NOT NULL AUTO_INCREMENT,
+    `request` varchar(32) NOT NULL,
+    `timestamp` int(11) NOT NULL,
+    `data` mediumtext NOT NULL DEFAULT '',
+    PRIMARY KEY (`id`),
+    KEY `request` (`request`)
+    ) DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+EOD;
+
+  safe_query($create_table); 
+}
+// }}}
+
+    // {{{ deletion routine
+function tok_owm_current_deletion_routine() {
+  $drop_table = "DROP TABLE IF EXISTS `".PFX."tok_owm_current_requests_cache`;";
+  safe_query($drop_table); 
+}
+// }}}
+// }}}
+
+// {{{ main function
 function tok_owm_current($atts) {
 
-  // Get Attributes
+  // {{{ get and check Attributes
   extract( lAtts( array(
 			'apikey'  => '',
 			'lang'  => 'en',
 			'na'  => '?',
+			'cache_secs'  => '600',
+			'cache_mark'  => '',
 			'cityids'  => '',
 			'units'   => 'metric',
 			'display' => '<p><strong>{{cityname}}</strong><br /><img src="{{icon_url}}" '.
@@ -200,7 +258,7 @@ function tok_owm_current($atts) {
 
   $err_format = '<span style="color:#d12;" title="%s">█</span>';
 
-  // check neccessary attributes
+  // check
   $error = '';
   if ( empty ( $cityids )) {
     $error .= sprintf( $err_format, 'City ID is missing!' );
@@ -216,8 +274,24 @@ function tok_owm_current($atts) {
   if ( $error ) {
     return( $error );
   }
+  // }}}
 
-  // get data from OpenWeatherMap
+  // {{{ return cached data, if there is some
+  $now = time();
+  $index = md5( $cityids.'_'.$lang.'_'.$units );
+  $cached_data = safe_row("timestamp, data",
+			  "tok_owm_current_requests_cache",
+			  "request='$index'");
+
+  if( $cached_data ){
+    extract( $cached_data );
+    if ( $now < $timestamp + $cache_secs ) {
+      return( $data.$cache_mark );
+    }
+  };
+  // }}}
+  
+  // {{{ else request data from OpenWeatherMap
 
   // request depends on number of requested cities
   $request_find = ( strpos( $cityids, ',') ) ? "group" : "weather";
@@ -234,25 +308,55 @@ function tok_owm_current($atts) {
        )
      );
   $owm_response = json_decode( $response_json, true );
+  // }}}
 
-  // finish single city
-  if ( $request_find != "group" ) {
-    $weather = tok_owm_current_import_data( $owm_response );
-    return ( strtr( $display, $weather ) );
+  // {{{ assemble plugins output, save to database and return to txp
+  $output = "";
+
+  // single city
+  if ( $request_find === "weather" ) {
+    $weather = tok_owm_current_import_data( $owm_response, $na );
+    $output = strtr( $display, $weather );
+  }
+  // group of cities
+  else {
+    foreach ( $owm_response[ "list" ] as $current_city ) {
+      $weather = tok_owm_current_import_data( $current_city, $na );
+      $output .= strtr( $display, $weather );
+    }
   }
 
-  
-  // if some more cities have been requested
-  $weatherstring = "";
-  foreach ( $owm_response[ "list" ] as $current_city ) {
-    $weather = tok_owm_current_import_data( $current_city );
-    $weatherstring .= strtr( $display, $weather );
+  // save output to database
+  if( $cached_data ){
+    safe_update( "tok_owm_current_requests_cache",
+		 "timestamp='".$now."',".
+		 "data='".mysql_real_escape_string( $output )."'",
+		 "request='$index';");
   }
-  return ( $weatherstring );
+  else {
+    safe_insert( "tok_owm_current_requests_cache",
+		 "timestamp='".$now."',".
+		 "data='".mysql_real_escape_string( $output )."',".
+		 "request='".$index."';");
+  }
+
+  return ( $output );
+  // }}}
 }
 
+
+/* write data */
+/* safe_update("aks_cache", "ttl=$ttl2, data='$data2', infos='$id2|$diff|".strlen($data)."'", "hid='$hash'");  */
+/* safe_insert("aks_cache", "hid='$hash', ttl=$ttl2, data='$data2', infos='$id2|$diff|".strlen($data)."'");  */
+
+
+
+
+// }}}
+
+  // {{{ function to import data
 // convert response array to plugins variables
-function tok_owm_current_import_data( $owm_data ) {
+function tok_owm_current_import_data( $owm_data, $na ) {
 
   // basic data
   $variable_array = array("{{id}}" => $owm_data['id'],
@@ -299,10 +403,10 @@ function tok_owm_current_import_data( $owm_data ) {
 
   return ( $variable_array);
 }
-
-
-
+// }}}
 
 # --- END PLUGIN CODE ---
+// }}}
 
 ?>
+
