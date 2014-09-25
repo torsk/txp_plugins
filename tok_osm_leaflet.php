@@ -2,7 +2,7 @@
 
 $plugin['version'] = '0.2';
 $plugin['author'] = 'Torsten Krüger';
-$plugin['author_uri'] = 'http://kryger.de/';
+$plugin['author_uri'] = 'http://www.kryger.de/';
 $plugin['description'] = 'Displays a small OpenStreetMap (with a marker in it if requested) using the leaflet library';
 
 // Plugin types:

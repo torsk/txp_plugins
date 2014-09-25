@@ -5,7 +5,7 @@
 
 $plugin['version'] = '0.2';
 $plugin['author'] = 'Torsten Krüger';
-$plugin['author_uri'] = 'http://kryger.de/';
+$plugin['author_uri'] = 'http://www.kryger.de/';
 $plugin['description'] = 'Shows data from OpenWeatherMap widely configurable';
 
 $plugin['type'] = 0;
@@ -345,15 +345,6 @@ function tok_owm_current($atts, $thing = null ) {
   return ( $out );
   // }}}
 }
-
-
-/* write data */
-/* safe_update("aks_cache", "ttl=$ttl2, data='$data2', infos='$id2|$diff|".strlen($data)."'", "hid='$hash'");  */
-/* safe_insert("aks_cache", "hid='$hash', ttl=$ttl2, data='$data2', infos='$id2|$diff|".strlen($data)."'");  */
-
-
-
-
 // }}}
 
   // {{{ function to import data
