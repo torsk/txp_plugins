@@ -1,6 +1,6 @@
 <?php
 
-$plugin['version'] = '0.2';
+$plugin['version'] = '0.3';
 $plugin['author'] = 'Torsten Krüger';
 $plugin['author_uri'] = 'http://www.kryger.de/';
 $plugin['description'] = 'Displays a small OpenStreetMap (with a marker in it if requested) using the leaflet library';
@@ -34,7 +34,7 @@ h3. Map dimension
 
 Are any valid CSS dimensions to set width and height of the map div. If you omit the unit, "px" is assumed.
 
-If you don't provide width and height, more or less senseful default values will be applied.
+If you do not provide width and height, more or less senseful default values will be applied.
 
 h4. Set up the map
 
@@ -107,7 +107,14 @@ bc. <txp:tok_osm_leaflet mlat="40.76291" mlon="-73.98285" mcomment="Birdland" />
 
 # --- BEGIN PLUGIN CODE ---
 
-function tok_osm_leaflet($atts) {
+global $tok_osm_leaflet_mapcounter;
+if ( $tok_osm_leaflet_mapcounter == NULL) {
+  $tok_osm_leaflet_mapcounter = 0; }
+
+function tok_osm_leaflet( $atts ) {
+
+  global $tok_osm_leaflet_mapcounter;
+  $tok_osm_leaflet_mapcounter++;
 
   // Get Attributes
   extract( lAtts( array(
@@ -118,7 +125,8 @@ function tok_osm_leaflet($atts) {
 			'clon'     => '',
 			'mlat'     => '',
 			'mlon'     => '',
-			'mcomment' => ''
+			'mcomment' => '',
+                        'tokcounter' => 0
 			), $atts ));
 
   $err_format = '<span style="color:#d12;" title="%s">█</span>';
@@ -145,28 +153,35 @@ function tok_osm_leaflet($atts) {
   if ( is_numeric( $width )) { $width = $width . 'px'; }
   if ( is_numeric( $height )) { $height = $height . 'px'; }
 
+  // build map ID
+  $map_id = 'tok_osm_leaflet_map_' . $tok_osm_leaflet_mapcounter;
+
   // assemble the html part
-  $map_part = '<script src="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script>' . "\n" .
-    '<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css" />' . "\n" .
-    '<div id="map" style="width:' . $width .
+  $map_part = '';
+
+  // load leaflet stuff only once
+  if ( $tok_osm_leaflet_mapcounter == 1 ) {
+    $map_part .= '<script src="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script>' . "\n" .
+    '<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css" />' . "\n"; }
+
+  $map_part .=  '<div id="' . $map_id . '" style="width:' . $width .
     ';height:' . $height . '; border: 1px solid #8a7364;"></div>' . "\n" .
     '<script type="text/javascript">' . "\n" .
-    'window.addEventListener("load", build_map, false);' . "\n" .
-    'function build_map() {'. "\n" .
-    'var map = L.map("map").setView([' . $clat . ',' . $clon . '],' . $zoom . ');' . "\n" .
-    'L.tileLayer("http://{s}.tile.osm.org/{z}/{x}/{y}.png", {' . "\n" .
-    'attribution: \'&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors\'}).addTo(map);';
+    'window.addEventListener("load", build_' . $map_id . ', false);' . "\n" .
+    'function build_' . $map_id . '() {'. "\n" .
+    'var ' . $map_id . ' = L.map("' . $map_id . '").setView([' . $clat . ',' . $clon . '],' . $zoom . ');' .
+    "\n" . 'L.tileLayer("http://{s}.tile.osm.org/{z}/{x}/{y}.png", {' . "\n" .
+    'attribution: \'&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors\'}).addTo(' . $map_id . ');';
 
   // add marker if one was requestes
   if (( !empty( $mlon )) && ( !empty( $mlat ) )) {
-    $map_part .= 'L.marker([' . $mlat . ',' . $mlon . ']).addTo(map)';
+    $map_part .= 'L.marker([' . $mlat . ',' . $mlon . ']).addTo(' . $map_id . ')';
     if ( !empty( $mcomment )) {
       $map_part .= '.bindPopup("'.$mcomment.'")';}
   }
 
   // finish
   $map_part .= '}</script>';
-
   return ( $map_part );
 }
 
