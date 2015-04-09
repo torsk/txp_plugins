@@ -5,13 +5,23 @@ $plugin['author'] = 'Torsten Krüger';
 $plugin['author_uri'] = 'http://www.kryger.de/';
 $plugin['description'] = 'Displays a small OpenStreetMap (with a marker in it if requested) using the leaflet library';
 
-// Plugin types:
-// 0 = regular plugin; loaded on the public web side only
-// 1 = admin plugin; loaded on both the public and admin side
-// 2 = library; loaded only when include_plugin() or require_plugin() is called
-$plugin['type'] = 0;
+// Plugin 'type' defines where the plugin is loaded
+// 0 = public       : only on the public side of the website (default)
+// 1 = public+admin : on both the public and non-AJAX admin side
+// 2 = library      : only when include_plugin() or require_plugin() is called
+// 3 = admin        : only on the non-AJAX admin side
+// 4 = admin+ajax   : only on admin side
+// 5 = public+admin+ajax   : on both the public and admin side
+$plugin['type'] = 1;
 
-@include_once('zem_tpl.php');
+// Flags
+if (!defined('PLUGIN_HAS_PREFS')) define('PLUGIN_HAS_PREFS', 0x0001);
+if (!defined('PLUGIN_LIFECYCLE_NOTIFY')) define('PLUGIN_LIFECYCLE_NOTIFY', 0x0002);
+// $plugin['flags'] = PLUGIN_HAS_PREFS | PLUGIN_LIFECYCLE_NOTIFY;
+$plugin['flags'] = PLUGIN_LIFECYCLE_NOTIFY;
+
+if (!defined('txpinterface')) {
+  @include_once('zem_tpl.php');}
 
 if (0) {
 ?>
@@ -61,8 +71,24 @@ _mlon_ and _mlat_ are the GPS coordinates of the markers position, exactly as _c
 If _mcomment_ has a value, the marker will be clickable to show the given content.
 
 
-h2. Examples
+h2. Preference of this plugin
 
+h3. Local leaflet installation
+
+By default @tok_osm_leaflet@ loads code and style (including images) from the leaflet content delivering network. In case you have downloaded the packaged files from the leaflet site, saved them on your server (and maybe have adjusted them a bit) you may advise the plugin to use that files. Just enter the path to the base directory of your leaflet stuff in the "admin" section of the "Advanced Preferences" page. Lookout for _Leaflet directory path_.
+
+Assuming you unpacked the leaflet zip file in a directory called "leaflet" in your textpattern base directory, the following values were allowed for _Leaflet directory path_:
+
+* @http://www.yourdomain.tld/leaflet@
+* @$site_url/leaflet@
+* @/leaflet@
+
+If you forgot to remove a trailing slash in the path delaration, the plugin will do it for you.
+
+An empty value for _Leaflet directory path_ will cause the files to be loaded from the leaflet content delivery network.
+
+
+h2. Examples
 
 h3. The simplest way of showing a map
 
@@ -111,10 +137,47 @@ global $tok_osm_leaflet_mapcounter;
 if ( $tok_osm_leaflet_mapcounter == NULL) {
   $tok_osm_leaflet_mapcounter = 0; }
 
+
+// register admin stuff of plugin
+if ( @txpinterface === 'admin' ) {
+  /* tok_osm_leaflet_install(); */
+  register_callback( 'tok_osm_leaflet_prefs', 'prefs', '', 1 );
+  register_callback( 'tok_osm_leaflet_lifecycle', 'plugin_lifecycle.tok_osm_leaflet' );
+}
+
+// cleanup database after removing plugin
+function tok_osm_leaflet_lifecycle( $event = '', $step = '' ) {
+  if( $step == 'deleted' ) {
+    safe_delete( 'txp_prefs',
+		 "name like 'tok_osm_leaflet_%'"
+		 );
+    return;
+  }
+}
+		
+// add pref to appropriate panel
+function tok_osm_leaflet_prefs() {
+  global $textarray;
+  $textarray['tok_osm_leaflet_leafletpath'] = 'Leaflet directory path';
+  
+  if ( ! safe_field ( 'name', 'txp_prefs', "name='tok_osm_leaflet_leafletpath'" )) {
+    safe_insert( 'txp_prefs',
+		 "prefs_id=1, name='tok_osm_leaflet_leafletpath', val='', " .
+		 "type=1, event='admin', html='text_input', position=20");
+  }
+}
+
+// main part of plugin
 function tok_osm_leaflet( $atts ) {
 
-  global $tok_osm_leaflet_mapcounter;
+  global $tok_osm_leaflet_mapcounter, $tok_osm_leaflet_leafletpath;
   $tok_osm_leaflet_mapcounter++;
+
+  // setup path for leaflet stuff
+  if ( empty ( $tok_osm_leaflet_leafletpath )) {
+    $tok_osm_leaflet_leafletpath = 'http://cdn.leafletjs.com/leaflet-0.7.3';}
+  $leafletpath = rtrim( $tok_osm_leaflet_leafletpath, '/' );
+  $leafletpath = str_replace( '$site_url', rtrim( site_url(), '/' ), $leafletpath );
 
   // Get Attributes
   extract( lAtts( array(
@@ -156,13 +219,13 @@ function tok_osm_leaflet( $atts ) {
   // build map ID
   $map_id = 'tok_osm_leaflet_map_' . $tok_osm_leaflet_mapcounter;
 
-  // assemble the html part
+  // assemble html part
   $map_part = '';
 
   // load leaflet stuff only once
   if ( $tok_osm_leaflet_mapcounter == 1 ) {
-    $map_part .= '<script src="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.js"></script>' . "\n" .
-    '<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.7.2/leaflet.css" />' . "\n"; }
+    $map_part .= '<script src="' . $leafletpath . '/leaflet.js"></script>' . "\n" .
+    '<link rel="stylesheet" href="' . $leafletpath . '/leaflet.css" />' . "\n"; }
 
   $map_part .=  '<div id="' . $map_id . '" style="width:' . $width .
     ';height:' . $height . '; border: 1px solid #8a7364;"></div>' . "\n" .
@@ -174,7 +237,7 @@ function tok_osm_leaflet( $atts ) {
     'attribution: \'&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors\'}).addTo(' . $map_id . ');';
 
   // add marker if one was requestes
-  if (( !empty( $mlon )) && ( !empty( $mlat ) )) {
+  if (( !empty( $mlon )) && ( !empty( $mlat )) ) {
     $map_part .= 'L.marker([' . $mlat . ',' . $mlon . ']).addTo(' . $map_id . ')';
     if ( !empty( $mcomment )) {
       $map_part .= '.bindPopup("'.$mcomment.'")';}
@@ -182,6 +245,7 @@ function tok_osm_leaflet( $atts ) {
 
   // finish
   $map_part .= '}</script>';
+ 
   return ( $map_part );
 }
 
