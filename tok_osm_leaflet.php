@@ -17,8 +17,7 @@ $plugin['type'] = 1;
 // Flags
 if (!defined('PLUGIN_HAS_PREFS')) define('PLUGIN_HAS_PREFS', 0x0001);
 if (!defined('PLUGIN_LIFECYCLE_NOTIFY')) define('PLUGIN_LIFECYCLE_NOTIFY', 0x0002);
-// $plugin['flags'] = PLUGIN_HAS_PREFS | PLUGIN_LIFECYCLE_NOTIFY;
-$plugin['flags'] = PLUGIN_LIFECYCLE_NOTIFY;
+$plugin['flags'] = PLUGIN_HAS_PREFS | PLUGIN_LIFECYCLE_NOTIFY;
 
 if (!defined('txpinterface')) {
   @include_once('zem_tpl.php');}
@@ -75,17 +74,17 @@ h2. Preference of this plugin
 
 h3. Local leaflet installation
 
-By default @tok_osm_leaflet@ loads code and style (including images) from the leaflet content delivering network. In case you have downloaded the packaged files from the leaflet site, saved them on your server (and maybe have adjusted them a bit) you may advise the plugin to use that files. Just enter the path to the base directory of your leaflet stuff in the "admin" section of the "Advanced Preferences" page. Lookout for _Leaflet directory path_.
+By default @tok_osm_leaflet@ loads code and style (including images) from the leaflet content delivering network. In case you have downloaded the packaged files from the leaflet site, saved them on your server (and maybe have adjusted them to your needs) you may advise the plugin to use that files. Just go to the @Options@-page of this plugin located at @Admin@ → @Plugins@ and enter the path of the base directory of your leaflet stuff.
 
-Assuming you unpacked the leaflet zip file in a directory called "leaflet" in your textpattern base directory, the following values were allowed for _Leaflet directory path_:
+Assuming you unpacked the leaflet zip file in a directory called "leaflet" in your textpattern base directory, the following values would be valid:
 
 * @http://www.yourdomain.tld/leaflet@
 * @$site_url/leaflet@
 * @/leaflet@
 
-If you forgot to remove a trailing slash in the path delaration, the plugin will do it for you.
+If you forgot to remove a trailing slash in path declaration, the plugin will do it for you.
 
-An empty value for _Leaflet directory path_ will cause the files to be loaded from the leaflet content delivery network.
+An empty value will cause the files to be loaded from the leaflet content delivery network.
 
 
 h2. Examples
@@ -133,20 +132,39 @@ bc. <txp:tok_osm_leaflet mlat="40.76291" mlon="-73.98285" mcomment="Birdland" />
 
 # --- BEGIN PLUGIN CODE ---
 
-global $tok_osm_leaflet_mapcounter;
+global $tok_osm_leaflet_leafletpath, $tok_osm_leaflet_mapcounter;
 if ( $tok_osm_leaflet_mapcounter == NULL) {
   $tok_osm_leaflet_mapcounter = 0; }
 
-
 // register admin stuff of plugin
 if ( @txpinterface === 'admin' ) {
-  /* tok_osm_leaflet_install(); */
-  register_callback( 'tok_osm_leaflet_prefs', 'prefs', '', 1 );
+  add_privs( 'tok_osm_leaflet_prefs', 1 );
+  add_privs( 'plugin_prefs.tok_osm_leaflet', '1,2' );
   register_callback( 'tok_osm_leaflet_lifecycle', 'plugin_lifecycle.tok_osm_leaflet' );
+  register_callback( 'tok_osm_leaflet_prefs', 'plugin_prefs.tok_osm_leaflet' );
+  register_callback( 'tok_osm_leaflet_prefs', 'tok_osm_leaflet_prefs' );
 }
 
-// cleanup database after removing plugin
+// lifecycle: install and remove plugin
 function tok_osm_leaflet_lifecycle( $event = '', $step = '' ) {
+
+  global $prefs;
+
+  if( $step == 'installed' ) {
+    if ( ! isset( $prefs[ 'tok_osm_leaflet_leafletpath' ] )) {
+      safe_insert( 'txp_prefs',
+		   "name = 'tok_osm_leaflet_leafletpath',
+                    val = '',
+                    html = 'text_input',
+                    prefs_id = 1,
+                    type = 2,
+                    event = 'publish',
+                    position = 0
+                    ");
+      return;
+    }
+  }
+  
   if( $step == 'deleted' ) {
     safe_delete( 'txp_prefs',
 		 "name like 'tok_osm_leaflet_%'"
@@ -155,19 +173,33 @@ function tok_osm_leaflet_lifecycle( $event = '', $step = '' ) {
   }
 }
 		
-// add pref to appropriate panel
-function tok_osm_leaflet_prefs() {
-  global $textarray;
-  $textarray['tok_osm_leaflet_leafletpath'] = 'Leaflet directory path';
-  
-  if ( ! safe_field ( 'name', 'txp_prefs', "name='tok_osm_leaflet_leafletpath'" )) {
-    safe_insert( 'txp_prefs',
-		 "prefs_id=1, name='tok_osm_leaflet_leafletpath', val='', " .
-		 "type=1, event='admin', html='text_input', position=20");
+// preferences
+function tok_osm_leaflet_prefs( $event, $step ){
+
+  global $tok_osm_leaflet_leafletpath;
+  include_once txpath . '/include/txp_prefs.php';
+
+  if ( ps( "save" )) {
+    prefs_save();
+    header( "Location: index.php?event=tok_osm_leaflet_prefs" );
   }
+
+  pagetop( 'tok_osm_leaflet Preferences' );
+  echo '<h1>tok_osm_leaflet Preferences</h1>';
+  echo form( startTable( '', '', 'txp-list' ).
+	     tr( tdcs( hed( 'Where to load the leaflet code and style from', 3), 2 ), ' class="pref-heading"').
+	     tr( tda( 'Path to leaflet directory' ).
+		 td( text_input("tok_osm_leaflet_leafletpath",
+				$tok_osm_leaflet_leafletpath,
+				'20'))).
+	     endTable().
+	     graf( fInput( "submit","save", "save" , "save" ).
+		   eInput( "tok_osm_leaflet_prefs").
+		   sInput('saveprefs')));
 }
 
-// main part of plugin
+
+// main part of plugin (output on page)
 function tok_osm_leaflet( $atts ) {
 
   global $tok_osm_leaflet_mapcounter, $tok_osm_leaflet_leafletpath;
