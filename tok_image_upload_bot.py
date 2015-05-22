@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8; mode: Python; folded-file: t -*-
-# Time-stamp: <2015-05-22 14:11:18 torsten>
+# Time-stamp: <2015-05-22 18:13:57 torsten>
 
 # {{{ preamble
 
@@ -37,10 +37,11 @@ Default_Category = ''
 # caption_grabber tuple: start point for search, regex to extract content, end point for search
 
 # For Xmp.dc.description
-# caption_grabber = '<dc:description>', '<rdf:li .*?">(.*)</rdf:li>', '</dc:description>'
+caption_grabber = '<dc:description>', '<rdf:li .*?">(.*)</rdf:li>', '</dc:description>'
 
 # For Exif.UserComment
-caption_grabber = '<exif:UserComment>', '<rdf:li .*?">(.*)</rdf:li>', '</exif:UserComment>'
+# caption_grabber = '<exif:UserComment>', '<rdf:li .*?">(.*)</rdf:li>', '</exif:UserComment>'
+
 # }}}
 
 # {{{ files and dirs
@@ -204,6 +205,7 @@ class Program():
             log( 'Setting Category and Caption …\n' )
 
             # {{{ Check, if (by name of directory) given category is valid
+
             # (means: extists as select option in HTML form)
             # grab appropriate part of HTML page
             category_select_start_pos = req.text.find( '<select id="image_category"  name="category">')
@@ -216,6 +218,7 @@ class Program():
                 # ... use default category
                 pic_category = Default_Category
                 log( 'Setting default category\n' )
+
             # }}}
                 
             if pic_caption == '':
