@@ -12,7 +12,7 @@ h3. version history
 h4. version 0.3
 
 * allows multiple maps per page; important e. g. for overview pages
-* enabled to use leaflet code and style that is stored on the webserver (to have an independent access to the files or to allow changes of style and images)
+* enabled to use leaflet code and style that is stored on the web server (to have an independent access to the files or to allow changes of style and images)
 
 h4. version 0.2
 
@@ -21,7 +21,7 @@ h4. version 0.2
 
 h2. tok_next_weekly
 
-_tok_next_weekly_ calculates the upcoming occurence of a weekly recurring date. The output is widely configurable through strftime compatibility. A detailed instruction with examples is included on the plugins help page.
+_tok_next_weekly_ calculates the upcoming occurrence of a weekly recurring date. The output is widely configurable through strftime compatibility. A detailed instruction with examples is included on the plugins help page.
 
 * "source":tok_next_weekly.php
 * "installable snippet":https://github.com/torsk/txp_plugins/raw/master/tok_next_weekly.txt
@@ -29,9 +29,63 @@ _tok_next_weekly_ calculates the upcoming occurence of a weekly recurring date. 
 
 h2. tok_owm_current
 
-_tok_owm_current_ makes the current weather data from "http://www.openweathermap.org":http://www.openweathermap.org available as textpattern plugin. The output is widely configurable; documentation and examples are included on the plugins help page.
-However, you need an "OpenWeatherMap API Key":http://openweathermap.org/appid to use this plugin.
+_tok_owm_current_ makes the current weather data from "http://www.openweathermap.org":http://www.openweathermap.org available as textpattern plugin. The output is widely configurable; documentation and examples are included on the plugins help page. However, you need an "OpenWeatherMap API Key":http://openweathermap.org/appid to use this plugin.
 
 * "source":tok_owm_current.php
 * "installable snippet":https://github.com/torsk/txp_plugins/raw/master/tok_owm_current.txt
 
+h2. Not a Textpattern plugin: @tok_image_upload_bot.py@
+
+The procedure of uploading, managing and selecting images in txp is indeed usable, but does not reflect my way of working.
+
+I get my photos from the camera to the PC, roughly sorted by date, then use an image viewer (»geeqie«, http://geeqie.sourceforge.net/) to look through, sort, select for publication and write an image description.
+
+When I write an article in txp and want to include a photo, I do not want to switch from the "Write"-tab to the "Images"-tab, but have geeqie (the image viewer) still opened on the desktop. So I use the image viewer for uploading the image to textpattern, setting category and caption automatically on the server and to get the ID-number of my uploaded picture.
+
+h3. How do I do that?
+
+*First:* Images selected for publication are saved to a special  directory; even to a special subdirectory inside the special  directory. The first special directory was created to simply collect  all images selected for publication (so let's call it "@upload@"). The subdirectories inside are named according to the categories the  images are sorted by. So for a sports blog you might have "@/upload/football/@", "@/upload/tennis/@", "@/upload/golf/@", etc. (This should be self-explanatory even if you have not the slightest idea of @tok_image_upload_bot.py@.) Sorting images this way  should be done by a mouse click in every image viewer.
+
+*Second:* There is a little helper script (written in python3) which  is plugged into the image viewer (but may also be used from the  command line) and does all the work: It creates a resized image and a  thumbnail too, uploads both, sets the category, the caption too if one was set and shows the ID-number, that was given to the image from  the server, in a little window on the screen. All this triggered by  one mouse click -- and even more: You might select multiple files and  they all will be processed successively in one go. This helper script is @tok_image_upload_bot.py@
+
+h3. What you have to do (if you want to use @tok_image_upload_bot.py@ too)
+
+Minimal requirement is to provide *online credentials* in the section with the same name at the beginning of the file. Please set up @Txp_Login_URL@, @Txp_Userid@ and @Txp_Password@.
+
+In the following section in the script file, "@new images settings@", you might set the *maximum dimensions* of the full size image as well as the thumbnail. Also please set a default category, which will be used, when an invalid category name was given during upload (the subdirectory, supra).
+
+Next one, the caption: The script takes the value of *@Xmp.dc.description@*. Other variants (like "@Exif.UserComment@") should be possible, but are not yet implemented. Defined here are the start and end of the search area and in-between the regular expression to extract the data.
+
+Further configuration should not be necessary, but you might want to extend the script to your needs. I'd love to hear from your modifications.
+
+h3. Embed the script in your image viewer (just for convenience)
+
+You might call the @tok_image_upload_bot.py@ on the command line and pass the image file(s) as parameters to it. I integrated the script as an "editor" in my image viewer "geeqie" by creating a desktop-file like
+
+bc. [Desktop Entry]
+Version=1.0
+Type=Application
+Name=Upload image to blog
+Exec=/path/to/tok_image_upload_bot.py %F
+Categories=X-Geeqie;
+OnlyShowIn=X-Geeqie;
+X-Geeqie-Menu-Path=EditMenu/FileOpsSection
+X-Geeqie-Filter=false
+
+and set it as an editor (copied to @~/.config/geeqie/applications/@). To call the script, right click the mouse on an image (or selected images) and select "Upload image to blog" from the edit menu.
+
+h3. Screenshot
+
+A really tiny program window keeps you informed about every single step of the process:
+
+<img
+src="data:image/gif;base64,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" />
+
+h3. experiences
+
+I used this script (or its predecessor) for a long time. But under linux only. There is not yet any practical knowledge with other operating systems. Some tweaking might be necessary, but I'm willing to improve the script with the help of its users.
+
+h3. The code
+
+* "Viewable":tok_image_upload_bot.py
+* "Download":https://github.com/torsk/txp_plugins/raw/master/tok_image_upload_bot.py
