@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 # -*- coding: utf-8; mode: Python; folded-file: t -*-
-# Time-stamp: <2015-05-22 18:13:57 torsten>
+# Time-stamp: <2015-09-18 18:12:50 torsten>
 
 # {{{ preamble
 
@@ -56,38 +56,41 @@ Thumbnail_Suffix = '_tn'
 # {{{ Class GUI
 
 class Program():
-    def __init__(self):
-        root = tk.Tk(className="makememoirphoto")
+    def __init__( self ):
+        root = tk.Tk( className = "tokUploadBot" )
         # variable for program control
         self.TriggerContinue = tk.BooleanVar()
         self.TriggerContinue.set( False )
         # upper frame setup
-        upperFrame = tk.Frame(root, relief="raised")
-        upperFrame.pack(fill="both", expand=True)
-        textbox = tk.Text(upperFrame, width=50, height=10)
-        textbox.pack(side="left",fill="both", expand=True)
+        upperFrame = tk.Frame( root, relief = "raised" )
+        upperFrame.pack( fill = "both", expand = True )
+        textbox = tk.Text( upperFrame, width = 50, height = 10)
+        textbox.pack( side = "left", fill = "both", expand = True)
         # font setup
-        bold_font = tkFont.Font(textbox, textbox.cget("font"))
-        bold_font.configure(weight="bold")
-        textbox.tag_configure('highlightline', font=bold_font)
-        textbox.tag_configure('warnline', font=bold_font, foreground="#ff1234")
+        bold_font = tkFont.Font( textbox, textbox.cget( "font" ) )
+        bold_font.configure( weight = "bold" )
+        textbox.tag_configure( 'highlightline',
+                               font = bold_font )
+        textbox.tag_configure( 'warnline',
+                               font = bold_font,
+                               foreground = "#ff1234" )
         # lower frame init
-        lowerFrame = tk.Frame(root, relief="raised")
-        lowerFrame.pack(fill="both", expand=True)
+        lowerFrame = tk.Frame( root, relief = "raised" )
+        lowerFrame.pack( fill = "both", expand = True )
 
         def log( text ):
-            textbox.insert(tk.END, text )
-            textbox.see(tk.END)
+            textbox.insert( tk.END, text )
+            textbox.see( tk.END )
             textbox.update()
 
         def boldlog( text ):
-            textbox.insert(tk.END, text, 'highlightline' )
-            textbox.see(tk.END)
+            textbox.insert( tk.END, text, 'highlightline' )
+            textbox.see( tk.END )
             textbox.update()
 
         def warnlog( text ):
-            textbox.insert(tk.END, text, 'warnline' )
-            textbox.see(tk.END)
+            textbox.insert( tk.END, text, 'warnline' )
+            textbox.see( tk.END )
             textbox.update()
 
         def triggerContinue():
@@ -95,16 +98,16 @@ class Program():
 
         def fail( errorCode ):
             self.TriggerContinue.set( False )
-            button = tk.Button(lowerFrame, text="shame", command=triggerContinue)
-            button.pack(side="right", padx=5, pady=5)
+            button = tk.Button(lowerFrame, text="shame", command = triggerContinue )
+            button.pack( side="right", padx = 5, pady = 5 )
             root.update()
-            root.wait_variable(self.TriggerContinue)
+            root.wait_variable( self.TriggerContinue )
             sys.exit( errorCode )
 
 # {{{ Create image and thumbnail for upload
 
         def createImageFiles():
-            log( "Resizing image ...\n")
+            log( "Resizing image ...\n" )
             upload_image = Image.open( current_input_file )
             try:
                 upload_image.thumbnail( Image_Size, Image.ANTIALIAS )
@@ -115,7 +118,7 @@ class Program():
                 log( "Creating of " + Upload_Image_File + " failed. Exiting!" )
                 fail( 5 )
 
-            log( "Creating thumbnail …\n")
+            log( "Creating thumbnail …\n" )
             upload_thumb = Image.open( Upload_Image_File )
             try:
                 upload_thumb.thumbnail( Thumbnail_Size, Image.ANTIALIAS )
@@ -131,7 +134,7 @@ class Program():
 # {{{ Upload image files
 
         def uploadImageFiles( pic_category, Default_Category, pic_caption ):
-            log( "Uploading image …\n")
+            log( "Uploading image …\n" )
 
             params = {
                 'MAX_FILE_SIZE': '8388608',
@@ -265,8 +268,8 @@ class Program():
         # {{{ perform some checks first
 
         # Get Values from Commandline
-        if len(sys.argv) > 1:
-            input_files = sys.argv[1:]
+        if len( sys.argv ) > 1:
+            input_files = sys.argv[ 1: ]
         else:
             log( "Please provide at least one file. Quitting." )
             fail( 1 )
@@ -351,6 +354,8 @@ class Program():
         sys.exit()
 # }}}
         
+# }}}
+
 # {{{ Entry Point
 program = Program()
 tk.mainloop()
