@@ -29,12 +29,12 @@ $plugin['textpack'] = <<< EOT
 tok_mailalert_boxtitle_plugin_error => »tok_mailalert« plugin error
 tok_mailalert_boxtxt_not_yet_setup => The plugin »tok_mailalert« is not yet setup
 tok_mailalert_conf_val_mailsubject => A new posting was published
-tok_mailalert_conf_val_mailbody => Hi!\r\rPlease visit <txp_siteurl> as soon as possible\r\rSincerely, <txp_user>
+tok_mailalert_conf_val_mailbody => Hi!\r\rPlease visit <%siteurl%> as soon as possible\r\rSincerely, <%userName%>
 #@language de-de
 tok_mailalert_boxtitle_plugin_error => »tok_mailalert« Plugin Fehler
 tok_mailalert_boxtxt_not_yet_setup => Das Plugin »tok_mailalert« ist noch nicht konfiguriert
 tok_mailalert_conf_val_mailsubject => Ein neues Posting wurde veröffentlicht
-tok_mailalert_conf_val_mailbody => Hallo!\r\rBitte besuche alsbald\r\r<txp_siteurl>\r\rViele Grüße\r<txp_user>
+tok_mailalert_conf_val_mailbody => Hallo!\r\rBitte besuche alsbald\r\r<%siteurl%>\r\rViele Grüße\r<%userName%>
 EOT;
 
 // }}}
@@ -89,8 +89,8 @@ p. Things on the extension tab should not be to hard to understand.
      But you may use variables in the mail body. They are:
 
 |_. variable    |_. result                |
-| <txp_siteurl> | Site URL                |
-| <txp_user>    | name of logged in user  |
+| <%siteurl%>   | Site URL                |
+| <%userName%>  | name of logged in user  |
      
 h2(#help-section05). Uninstallation
 
@@ -286,8 +286,8 @@ function tok_mailalert_configuration($event, $step) {
 		 td( text_input( "tok_mailalert_subject", $tok_mailalert_subject, 60 ))).
 	     tr( tda( gTxt( "mail body<br />" .
 			    "(You may use these variables:<br />" .
-			    "&lt;txp_siteurl&gt: Site URL<br />" .
-			    '&lt;txp_user&gt: name of logged in user)')).
+			    "&lt;%siteurl%&gt: Site URL<br />" .
+			    '&lt;%userName%&gt: name of logged in user)')).
 		 td( '<textarea id="tok_mailalert_mailbody" name="tok_mailalert_mailbody" ' .
 		     'rows="12" cols="60">'.htmlspecialchars($tok_mailalert_mailbody).'</textarea>')).
 	     tr( tdcs( hed( 'Element Texts', 3 ), 2 ), ' class="pref-heading"').
