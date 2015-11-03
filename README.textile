@@ -34,6 +34,14 @@ _tok_owm_current_ makes the current weather data from "http://www.openweathermap
 * "source":tok_owm_current.php
 * "installable snippet":https://github.com/torsk/txp_plugins/raw/master/tok_owm_current.txt
 
+h2. tok_mailalert
+
+_tok_mailalert_ adds a checkbox to the Write tab. If the checkmark is set, an email will be sent to a preconfigured list of email addresses when the article is saved the next time.
+
+* "source":tok_mailalert.php
+* "installable snippet":https://github.com/torsk/txp_plugins/raw/master/tok_mailalert.txt
+
+
 h2. Not a Textpattern plugin: @tok_image_upload_bot.py@
 
 The procedure of uploading, managing and selecting images in txp is indeed usable, but does not reflect my way of working.

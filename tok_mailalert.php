@@ -71,7 +71,7 @@ h2. Table of contents
 
 h2(#help-section02). Plugin requirements
 
-p. This plugin has only been tested with Textpattern 4.5 but may run
+p. This plugin has only been tested with Textpattern 4.5.7 but may run
     on other/previous versions.
 
 h2(#help-section03). Installation
