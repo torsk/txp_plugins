@@ -1,6 +1,6 @@
 <?php
 
-$plugin['version'] = '0.3';
+$plugin['version'] = '0.4';
 $plugin['author'] = 'Torsten Krüger';
 $plugin['author_uri'] = 'http://www.kryger.de/';
 $plugin['description'] = 'Displays a small OpenStreetMap (with a marker in it if requested) using the leaflet library';
@@ -133,26 +133,32 @@ bc. <txp:tok_osm_leaflet mlat="40.76291" mlon="-73.98285" mcomment="Birdland" />
 # --- BEGIN PLUGIN CODE ---
 
 global $tok_osm_leaflet_leafletpath, $tok_osm_leaflet_mapcounter;
-if ( $tok_osm_leaflet_mapcounter == NULL) {
+if ($tok_osm_leaflet_mapcounter == NULL) {
   $tok_osm_leaflet_mapcounter = 0; }
 
 // register admin stuff of plugin
-if ( @txpinterface === 'admin' ) {
-  add_privs( 'tok_osm_leaflet_prefs', 1 );
-  add_privs( 'plugin_prefs.tok_osm_leaflet', '1,2' );
-  register_callback( 'tok_osm_leaflet_lifecycle', 'plugin_lifecycle.tok_osm_leaflet' );
-  register_callback( 'tok_osm_leaflet_prefs', 'plugin_prefs.tok_osm_leaflet' );
-  register_callback( 'tok_osm_leaflet_prefs', 'tok_osm_leaflet_prefs' );
+if (@txpinterface === 'admin') {
+  add_privs('tok_osm_leaflet_prefs', 1);
+  add_privs('plugin_prefs.tok_osm_leaflet', '1,2');
+  register_callback('tok_osm_leaflet_lifecycle', 'plugin_lifecycle.tok_osm_leaflet');
+  register_callback('tok_osm_leaflet_prefs', 'plugin_prefs.tok_osm_leaflet');
+  register_callback('tok_osm_leaflet_prefs', 'tok_osm_leaflet_prefs');
+} elseif (txpinterface === 'public') {
+    if (class_exists('\Textpattern\Tag\Registry')) {
+        Txp::get('\Textpattern\Tag\Registry')
+            ->register('tok_osm_leaflet');
+    }
 }
 
+
 // lifecycle: install and remove plugin
-function tok_osm_leaflet_lifecycle( $event = '', $step = '' ) {
+function tok_osm_leaflet_lifecycle($event = '', $step = '') {
 
   global $prefs;
 
-  if( $step == 'installed' ) {
-    if ( ! isset( $prefs[ 'tok_osm_leaflet_leafletpath' ] )) {
-      safe_insert( 'txp_prefs',
+  if($step == 'installed') {
+    if (! isset($prefs['tok_osm_leaflet_leafletpath'])) {
+      safe_insert('txp_prefs',
 		   "name = 'tok_osm_leaflet_leafletpath',
                     val = '',
                     html = 'text_input',
@@ -165,54 +171,56 @@ function tok_osm_leaflet_lifecycle( $event = '', $step = '' ) {
     }
   }
   
-  if( $step == 'deleted' ) {
-    safe_delete( 'txp_prefs',
+  if($step == 'deleted') {
+    safe_delete('txp_prefs',
 		 "name like 'tok_osm_leaflet_%'"
-		 );
+		);
     return;
   }
 }
-		
+
+
 // preferences
-function tok_osm_leaflet_prefs( $event, $step ){
+function tok_osm_leaflet_prefs($event, $step){
 
   global $tok_osm_leaflet_leafletpath;
   include_once txpath . '/include/txp_prefs.php';
 
-  if ( ps( "save" )) {
+  if (ps("save")) {
     prefs_save();
-    header( "Location: index.php?event=tok_osm_leaflet_prefs" );
+    header("Location: index.php?event=tok_osm_leaflet_prefs");
   }
 
-  pagetop( 'tok_osm_leaflet Preferences' );
+  pagetop('tok_osm_leaflet Preferences');
   echo '<h1>tok_osm_leaflet Preferences</h1>';
-  echo form( startTable( '', '', 'txp-list' ).
-	     tr( tdcs( hed( 'Where to load the leaflet code and style from', 3), 2 ), ' class="pref-heading"').
-	     tr( tda( 'Path to leaflet directory' ).
-		 td( text_input("tok_osm_leaflet_leafletpath",
+  echo form(startTable('', '', 'txp-list').
+	     tr(tdcs(hed('Where to load the leaflet code and style from', 3), 2), ' class="pref-heading"').
+	     tr(tda('Path to leaflet directory').
+		 td(text_input("tok_osm_leaflet_leafletpath",
 				$tok_osm_leaflet_leafletpath,
 				'20'))).
 	     endTable().
-	     graf( fInput( "submit","save", "save" , "save" ).
-		   eInput( "tok_osm_leaflet_prefs").
+	     graf(fInput("submit","save", "save" , "save").
+		   eInput("tok_osm_leaflet_prefs").
 		   sInput('saveprefs')));
 }
 
 
 // main part of plugin (output on page)
-function tok_osm_leaflet( $atts ) {
+function tok_osm_leaflet($atts) {
 
   global $tok_osm_leaflet_mapcounter, $tok_osm_leaflet_leafletpath;
   $tok_osm_leaflet_mapcounter++;
 
   // setup path for leaflet stuff
-  if ( empty ( $tok_osm_leaflet_leafletpath )) {
+  if (empty ($tok_osm_leaflet_leafletpath)) {
     $tok_osm_leaflet_leafletpath = 'http://cdn.leafletjs.com/leaflet-0.7.3';}
-  $leafletpath = rtrim( $tok_osm_leaflet_leafletpath, '/' );
-  $leafletpath = str_replace( '$site_url', rtrim( site_url(), '/' ), $leafletpath );
+  $leafletpath = rtrim($tok_osm_leaflet_leafletpath, '/');
+  /* $leafletpath = str_replace('$site_url', rtrim(site_url(), '/'), $leafletpath); */
+  $leafletpath = str_replace('$site_url', rtrim(site_url(array()), '/'), $leafletpath);
 
   // Get Attributes
-  extract( lAtts( array(
+  extract(lAtts(array(
 			'width'    => '600px',
 			'height'   => '400px',
 			'zoom'     => '16',
@@ -222,31 +230,31 @@ function tok_osm_leaflet( $atts ) {
 			'mlon'     => '',
 			'mcomment' => '',
                         'tokcounter' => 0
-			), $atts ));
+			), $atts));
 
   $err_format = '<span style="color:#d12;" title="%s">█</span>';
 
   // check neccessary atttributes
-  if ( empty ( $clat )) {
-    if ( !empty( $mlat )) {
-      $clat = number_format( $mlat + 0.0005, 5, '.', '');
+  if (empty ($clat)) {
+    if (!empty($mlat)) {
+      $clat = number_format($mlat + 0.0005, 5, '.', '');
     }
     else {
-      return( sprintf( $err_format, 'Center latitude is missing!' ));
+      return(sprintf($err_format, 'Center latitude is missing!'));
     }
   }
-  if ( empty ( $clon )) {
-    if ( !empty( $mlon )) {
+  if (empty ($clon)) {
+    if (!empty($mlon)) {
       $clon = $mlon;
     }
     else {
-      return( sprintf( $err_format, 'Center longitude is missing!' ));
+      return(sprintf($err_format, 'Center longitude is missing!'));
     }
   }
 
   // add "px" to width and height, if no unit was given
-  if ( is_numeric( $width )) { $width = $width . 'px'; }
-  if ( is_numeric( $height )) { $height = $height . 'px'; }
+  if (is_numeric($width)) {$width = $width . 'px';}
+  if (is_numeric($height)) {$height = $height . 'px';}
 
   // build map ID
   $map_id = 'tok_osm_leaflet_map_' . $tok_osm_leaflet_mapcounter;
@@ -255,7 +263,7 @@ function tok_osm_leaflet( $atts ) {
   $map_part = '';
 
   // load leaflet stuff only once
-  if ( $tok_osm_leaflet_mapcounter == 1 ) {
+  if ($tok_osm_leaflet_mapcounter == 1) {
     $map_part .= '<script src="' . $leafletpath . '/leaflet.js"></script>' . "\n" .
     '<link rel="stylesheet" href="' . $leafletpath . '/leaflet.css" />' . "\n"; }
 
@@ -269,16 +277,16 @@ function tok_osm_leaflet( $atts ) {
     'attribution: \'&copy; <a href="http://osm.org/copyright">OpenStreetMap</a> contributors\'}).addTo(' . $map_id . ');';
 
   // add marker if one was requestes
-  if (( !empty( $mlon )) && ( !empty( $mlat )) ) {
+  if ((!empty($mlon)) && (!empty($mlat))) {
     $map_part .= 'L.marker([' . $mlat . ',' . $mlon . ']).addTo(' . $map_id . ')';
-    if ( !empty( $mcomment )) {
+    if (!empty($mcomment)) {
       $map_part .= '.bindPopup("'.$mcomment.'")';}
   }
 
   // finish
   $map_part .= '}</script>';
  
-  return ( $map_part );
+  return ($map_part);
 }
 
 # --- END PLUGIN CODE ---
