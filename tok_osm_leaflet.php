@@ -1,6 +1,6 @@
 <?php
 
-$plugin['version'] = '0.4';
+$plugin['version'] = '0.5';
 $plugin['author'] = 'Torsten Krüger';
 $plugin['author_uri'] = 'http://www.kryger.de/';
 $plugin['description'] = 'Displays a small OpenStreetMap (with a marker in it if requested) using the leaflet library';
@@ -72,20 +72,18 @@ If _mcomment_ has a value, the marker will be clickable to show the given conten
 
 h2. Preference of this plugin
 
-h3. Local leaflet installation
+h3. Load Leaflet Resources
 
-By default @tok_osm_leaflet@ loads code and style (including images) from the leaflet content delivering network. In case you have downloaded the packaged files from the leaflet site, saved them on your server (and maybe have adjusted them to your needs) you may advise the plugin to use that files. Just go to the @Options@-page of this plugin located at @Admin@ → @Plugins@ and enter the path of the base directory of your leaflet stuff.
+By default @tok_osm_leaflet@ loads code and style as recommended by the makers of leaflet at the time the plugin was created. In case you prefer another location or another version of leaflet, you can specify this section manually. Just go to the @Options@-page of this plugin located at @Admin@ → @Plugins@ and enter the necessary HTML code. Take the displayed standard value (which is loaded if this field remains empty) as an example for your own code:
 
-Assuming you unpacked the leaflet zip file in a directory called "leaflet" in your textpattern base directory, the following values would be valid:
+pre. <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+	integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+	crossorigin=""></script>
 
-* @http://www.yourdomain.tld/leaflet@
-* @$site_url/leaflet@
-* @/leaflet@
-
-If you forgot to remove a trailing slash in path declaration, the plugin will do it for you.
-
-An empty value will cause the files to be loaded from the leaflet content delivery network.
-
+This setting is obviously intended for experienced users. If you don't know what to write here, just leave it blank
 
 h2. Examples
 
@@ -132,7 +130,7 @@ bc. <txp:tok_osm_leaflet mlat="40.76291" mlon="-73.98285" mcomment="Birdland" />
 
 # --- BEGIN PLUGIN CODE ---
 
-global $tok_osm_leaflet_leafletpath, $tok_osm_leaflet_mapcounter;
+global $tok_osm_leaflet_leafletresources, $tok_osm_leaflet_mapcounter;
 if ($tok_osm_leaflet_mapcounter == NULL) {
   $tok_osm_leaflet_mapcounter = 0; }
 
@@ -157,12 +155,11 @@ function tok_osm_leaflet_lifecycle($event = '', $step = '') {
   global $prefs;
 
   if($step == 'installed') {
-    if (! isset($prefs['tok_osm_leaflet_leafletpath'])) {
+    if (! isset($prefs['tok_osm_leaflet_leafletresources'])) {
       safe_insert('txp_prefs',
-		   "name = 'tok_osm_leaflet_leafletpath',
+		   "name = 'tok_osm_leaflet_leafletresources',
                     val = '',
                     html = 'text_input',
-                    prefs_id = 1,
                     type = 2,
                     event = 'publish',
                     position = 0
@@ -183,7 +180,7 @@ function tok_osm_leaflet_lifecycle($event = '', $step = '') {
 // preferences
 function tok_osm_leaflet_prefs($event, $step){
 
-  global $tok_osm_leaflet_leafletpath;
+  global $tok_osm_leaflet_leafletresources;
   include_once txpath . '/include/txp_prefs.php';
 
   if (ps("save")) {
@@ -194,30 +191,28 @@ function tok_osm_leaflet_prefs($event, $step){
   pagetop('tok_osm_leaflet Preferences');
   echo '<h1>tok_osm_leaflet Preferences</h1>';
   echo form(startTable('', '', 'txp-list').
-	     tr(tdcs(hed('Where to load the leaflet code and style from', 3), 2), ' class="pref-heading"').
-	     tr(tda('Path to leaflet directory').
-		 td(text_input("tok_osm_leaflet_leafletpath",
-				$tok_osm_leaflet_leafletpath,
-				'20'))).
-	     endTable().
-	     graf(fInput("submit","save", "save" , "save").
-		   eInput("tok_osm_leaflet_prefs").
-		   sInput('saveprefs')));
+            tr(tdcs(hed('Load leaflet resources (see <a href="index.php?event=plugin&step=plugin_help&name=tok_osm_leaflet#plugin_help_section_preference_of_this_plugin">Help</a>)', 3), 2), ' class="pref-heading"').
+            tr(tda('HTML code').
+               td('<textarea id="tok_osm_leaflet_leafletresources" name="tok_osm_leaflet_leafletresources" ' .
+                  'rows="12" cols="60">'.htmlspecialchars($tok_osm_leaflet_leafletresources).'</textarea>')).
+            endTable().
+            graf(fInput("submit","save", "save" , "save").
+                 eInput("tok_osm_leaflet_prefs").
+                 sInput('saveprefs')));
 }
 
 
 // main part of plugin (output on page)
 function tok_osm_leaflet($atts) {
 
-  global $tok_osm_leaflet_mapcounter, $tok_osm_leaflet_leafletpath;
+  global $tok_osm_leaflet_mapcounter, $tok_osm_leaflet_leafletresources;
   $tok_osm_leaflet_mapcounter++;
 
   // setup path for leaflet stuff
-  if (empty ($tok_osm_leaflet_leafletpath)) {
-    $tok_osm_leaflet_leafletpath = 'http://cdn.leafletjs.com/leaflet-0.7.3';}
-  $leafletpath = rtrim($tok_osm_leaflet_leafletpath, '/');
-  /* $leafletpath = str_replace('$site_url', rtrim(site_url(), '/'), $leafletpath); */
-  $leafletpath = str_replace('$site_url', rtrim(site_url(array()), '/'), $leafletpath);
+  if (empty ($tok_osm_leaflet_leafletresources)) {
+    $tok_osm_leaflet_leafletresources = '<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/> <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>';}
+  $leafletresources = rtrim($tok_osm_leaflet_leafletresources, '/');
+  // $leafletresources = str_replace('$site_url', rtrim(site_url(array()), '/'), $leafletresources);
 
   // Get Attributes
   extract(lAtts(array(
@@ -264,8 +259,7 @@ function tok_osm_leaflet($atts) {
 
   // load leaflet stuff only once
   if ($tok_osm_leaflet_mapcounter == 1) {
-    $map_part .= '<script src="' . $leafletpath . '/leaflet.js"></script>' . "\n" .
-    '<link rel="stylesheet" href="' . $leafletpath . '/leaflet.css" />' . "\n"; }
+    $map_part .= $leafletresources . "\n"; }
 
   $map_part .=  '<div id="' . $map_id . '" style="width:' . $width .
     ';height:' . $height . '; border: 1px solid #8a7364;"></div>' . "\n" .
